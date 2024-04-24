@@ -1,0 +1,6 @@
+*.pt
+*.db
+*.mp4
+images/
+*.bin
+*openvino
