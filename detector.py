@@ -5,7 +5,7 @@ class Detector:
         self.param = param
         self.model = self.get_model(model,self.param)
     
-    def get_model(self,name):
+    def get_model(self,name,param):
         if name == "yolov5n":
             model = Yolov5n.create_model()
             return model
@@ -15,7 +15,8 @@ class Detector:
 
         
 if __name__ == "__main__":
-    detector = Detector("yolov5s")
-    model = detector.model
-    print(model)
+    det = Detector(model = "yolov5s")
+    model = det.model
+    result = model("download.jpg")
+    result.show()
 

@@ -1,9 +1,9 @@
 import cv2
 import numpy as np
-#from widget import roi_button_callback
-from model import pytorch_yolov5s
 
-def show_video(video_path):
+def show_video(video_path , detect_flag):
+    
+        
     flagInitial = True
     win = f"Streaming {video_path}"
     cap = cv2.VideoCapture(video_path)
@@ -17,9 +17,7 @@ def show_video(video_path):
 
         if not ret:
             break
-        if len(roi)==0:
-            print(roi)
-        else:
+        if len(roi)!=0:
             if not roi_drawn_flag:
                 frame = draw_polygon(frame,roi)
                 
@@ -27,7 +25,9 @@ def show_video(video_path):
         cv2.imshow(
             winname = win ,mat=frame
             ) 
-
+        
+        #cv2.namedWindow("Frame")
+        #cv2.createButton(win,echo,None,cv2.QT_PUSH_BUTTON,1)
         #cv2.createButton(
         #    buttonName = "Select ROI",
         #    onChange=roi_button_callback,
@@ -35,23 +35,30 @@ def show_video(video_path):
         #    )
         if flagInitial:
             roi_flag=False
+            print("-------------------------------------------------------------------------------------")
+            print("------------------------------------- Input ROI Points ------------------------------")
+            print("-------------------------------------------------------------------------------------")
+
             while roi_flag !=True:
                 roi , roi_flag = get_roi_points(frame, roi)
                 if roi_flag:
                     flagInitial =False
-            print(roi)
+            
+        #if detect_flag:
+        #    mod(frame).show()
 
 
         if cv2.waitKey(25) & 0xFF == ord("q"):
             break
 
-def select_roi(img):
+def select_roi(img, verbose):
     rect = cv2.selectROI(
         windowName="selecting region of intrest",
         img = img,
     )
     cv2.destroyWindow("selecting region of intrest")
-    print(rect)
+    if verbose:
+        print(rect)
     return rect
 pts = []
 def mouse(event, x,y,flags,param):
@@ -80,7 +87,6 @@ def draw_polygon(frame,points):
     points = np.array(points)
     r,c=points.shape 
     points = points.reshape((-1,r,c))
-    print(points)
     frame = cv2.polylines(img=frame , pts=points, isClosed = True,color = (255,255,255),thickness=5,)
     return frame
 
@@ -88,7 +94,7 @@ def draw_point(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN :
         print(f"Left button clicked at ({x}, {y})")
         param[1].append((x,y))
-        cv2.circle( param[0],(x, y), 5, (255, 255, 255), -1)
+        param[0]=cv2.circle( param[0],(x, y), 5, (255, 255, 255), -1)
         return param[1]
 
 def get_roi_points(frame,points):
@@ -97,12 +103,17 @@ def get_roi_points(frame,points):
     param = [frame , points]
     cv2.imshow("Select ROI points", frame)
     cv2.setMouseCallback("Select ROI points", draw_point, param=param)
-    print(f"Points in ROI is {param[1]}")
              
     if cv2.waitKey() & 0xFF==ord("s"):
         if len(points)>=3:
+            print("-------------------------------------------------------------------------------------")
+            print("-----------------------------------Final Points In ROI-------------------------------")
+
             cv2.destroyWindow(winname="Select ROI points")
             flag=True
+            print(f"Selected Points in roi is {points}.")
+            print("-------------------------------------------------------------------------------------")
+
         else:
             print("Kindly select atleast 3 points.")
             flag=False
@@ -112,7 +123,8 @@ def click_event(event,x,y):
     if event == cv2.EVENT_LBUTTONDOWN :
         print(f"Left button clicked at ({x}, {y})")
     
-
+def echo():
+    print("vinay")
 def is_inside(edges, xp , yp):
     cnt = 0
     for edge in edges:
@@ -154,4 +166,4 @@ def dist(p1,p2):
 # Example usage:
 polygon = [(0, 0), (0, 4), (4, 4), (4, 0)]
 point = (2, 2)
-#print(is_inside(*point, polygon))
+##print(is_inside(*point, polygon))

@@ -4,3 +4,5 @@
 images/
 *.bin
 *openvino
+__pycache__/
+/venv
