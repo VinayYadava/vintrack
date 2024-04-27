@@ -1,7 +1,10 @@
+
+from detection_db import create_database , Entries
 import cv2
 import numpy as np
+from detector import Detector
 
-def show_video(video_path , detect_flag):
+def show_video(video_path , detector_name=None ,save_in_db = False , db_name = None):
     
         
     flagInitial = True
@@ -10,8 +13,18 @@ def show_video(video_path , detect_flag):
     if not cap.isOpened() :
         print("Error: Could not open video file.")
         exit()
+    if detector_name:
+        print("Creating Detector...")
+        detection_model = Detector(detector_name).model
+    if save_in_db:
+        print("dbdbdbd")
+
+        if not db_name:
+            db_name = "detections.db"
+        create_database(db_name)  
     roi = []
     roi_drawn_flag=False
+    
     while cap:
         ret , frame = cap.read()
 
@@ -20,11 +33,16 @@ def show_video(video_path , detect_flag):
         if len(roi)!=0:
             if not roi_drawn_flag:
                 frame = draw_polygon(frame,roi)
-                
 
-        cv2.imshow(
-            winname = win ,mat=frame
-            ) 
+                
+        if detector_name:
+            detections = detection_model(frame)
+            
+        
+        if not detector_name:
+            cv2.imshow(
+                winname = win ,mat=frame
+                ) 
         
         #cv2.namedWindow("Frame")
         #cv2.createButton(win,echo,None,cv2.QT_PUSH_BUTTON,1)
@@ -44,9 +62,13 @@ def show_video(video_path , detect_flag):
                 if roi_flag:
                     flagInitial =False
             
-        #if detect_flag:
-        #    mod(frame).show()
-
+        if detector_name:
+            cv2.imshow("ims", detections.render()[0])
+            detection_vector = detections.pred[0].numpy()
+            if save_in_db:
+                entry = Entries(db= "detections.db", video_id= "video123",pred = detection_vector)
+                entry.insert()
+            
 
         if cv2.waitKey(25) & 0xFF == ord("q"):
             break
@@ -167,3 +189,9 @@ def dist(p1,p2):
 polygon = [(0, 0), (0, 4), (4, 4), (4, 0)]
 point = (2, 2)
 ##print(is_inside(*point, polygon))
+
+
+if __name__=="__main__":
+    #video_path = "demo.mp4"
+    video_path = "highway.mp4"
+    show_video(video_path=video_path , detector_name="yolov5s",save_in_db=True)

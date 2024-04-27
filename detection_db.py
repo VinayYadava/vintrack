@@ -1,4 +1,8 @@
+from detector import Detector
+import cv2
 import sqlite3
+from datetime import datetime
+import numpy as np
 
 def create_database(db_file):
     conn = sqlite3.connect(db_file)
@@ -8,13 +12,12 @@ def create_database(db_file):
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS detections (
             time TEXT,
-            uid TEXT,
             video_id TEXT,
             x REAL,
             y REAL,
             w REAL,
             h REAL,
-            features TEXT,
+            confidence TEXT,
             label TEXT
         )
     ''')
@@ -23,31 +26,59 @@ def create_database(db_file):
     conn.close()
     print("Table 'detections' created successfully.")
 
-class Entry:
-    def __init__(self, time, bbox, features, uid, db, label, video_id):
-        self.time = time
-        self.uid = uid
-        self.features = features
-        self.x, self.y, self.w, self.h = bbox
+class Entries:
+    def __init__(self,db, video_id ,pred ):
         self.db = db
-        self.label = label
-        self.video_id = video_id
+        self.pred = pred
+        self.n , _ = self.pred.shape
+        self.headers = np.tile(
+            A = np.array([str(datetime.now()) , video_id]) , 
+            reps = (self.n,1)
+            ) 
+        self.entries = np.concatenate(
+            (self.headers , self.pred),
+            axis = 1
+        )
+        
 
-    def insert_entry(self):
+    
+    def insert(self , verbose=True):
+        l = len(self.entries)
+        if l ==0:
+            return  # No entries to insert
+        
         conn = sqlite3.connect(self.db)
         cursor = conn.cursor()
-        cmd = "INSERT INTO detections (time, uid, video_id, x, y, w, h, features, label) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        cursor.execute(cmd, (self.time, self.uid, self.video_id, self.x, self.y, self.w, self.h, self.features, self.label))
+        cmd = "INSERT INTO detections (time, video_id, x, y, w, h, confidence, label) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+        cursor.executemany(cmd, self.entries)
         conn.commit()
         conn.close()
-        print("Entry inserted successfully.")
+        if verbose:
+            print(f"{l} entries inserted successfully.")
+
+
 
 if __name__ == "__main__":
 
     # Example usage:
     # Create the database file and table
+    det = Detector(name = "yolov5n")
     create_database("detections.db")
+    img_path = "download.jpg"
+
+    img = cv2.imread(img_path)  
+    print(img)
+
+    mod = det.model
+    if mod ==None:
+        print("mod is none !")
+    pred = mod(img).pred[0].numpy()
     
+    print(pred)
+
+
+    
+
     # Create an Entry object and insert it into the database
-    entry = Entry("2024-04-24 12:00:00", (10, 10, 100, 100), "Some features", "user123", "detections.db", "car", "video123")
-    entry.insert_entry()
+    entry = Entries(db= "detections.db", video_id= "video123",pred = pred)
+    entry.insert()

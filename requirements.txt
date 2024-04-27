@@ -1,2 +1,11 @@
 openvino-dev
 opencv-python
+pandas
+requests
+pillow
+
+
+
+
+
+
