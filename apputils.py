@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 from detector import Detector
 
-def show_video(video_path , detector_name=None ,save_in_db = False , db_name = None):
+def show_video(video_path , detector_name=None ,save_in_db = False , db_name = None , param=False):
     
         
     flagInitial = True
@@ -22,7 +22,10 @@ def show_video(video_path , detector_name=None ,save_in_db = False , db_name = N
         if not db_name:
             db_name = "detections.db"
         create_database(db_name)  
-    roi = []
+    if param:
+        roi = param
+    else:
+        roi = []
     roi_drawn_flag=False
     
     while cap:
