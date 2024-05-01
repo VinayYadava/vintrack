@@ -24,7 +24,7 @@ run streamer.py file ( edit the path or video ).
 ```
 python streamer.py
 ```
-<iframe src=https://drive.google.com/file/d/1DPbn5d__i8ZoAXhJwTNf4zZZ3Lmd01yh/preview width="640" height="480"></iframe>
+<iframe src=https://drive.google.com/file/d/1DPbn5d__i8ZoAXhJwTNf4zZZ3Lmd01yh/view width="640" height="480"></iframe>
 
 
 ## Explore Examples ##
