@@ -25,7 +25,7 @@ run streamer.py file ( edit the path or video ).
 python streamer.py
 ```
 
-<iframe src=https://github.com/VinayYadava/vintrack/assets/122257125/c7719a74-96e0-4719-87a7-c274211e015f width="640" height="480"></iframe>
+https://github.com/VinayYadava/vintrack/assets/122257125/c7719a74-96e0-4719-87a7-c274211e015f
 
 ## Explore Examples ##
 You can explore examples given in 'examples' directory.
