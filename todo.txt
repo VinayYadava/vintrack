@@ -1,3 +1,1 @@
-1). implementation of drawing bbox inside roi only. Just integrate is_inside function present in aputils.py
-2). implement own bbox draw function.
-3). use optical flow( Lucus Knade Method) for tracking.
+1).  use optical flow( Lucus Knade Method) for tracking or Implement an inhouse tracking algo.

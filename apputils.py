@@ -70,17 +70,12 @@ def show_video(video_path , detector_name=None ,save_in_db = False , db_name = N
         if detector_name:
             
             predictions = detections.pred[0].numpy()
-            print(predictions)
-            exit()
-            int_predictions = []
-            print(predictions)
-            for i in predictions:
-                i[4]=i[4]*100
-                int_predictions.append(i.astype("int"))
-            print(int_predictions)
+            
+            predictions[: ,4] = predictions[:,4] * 100
+            predictions[:,2:4] = predictions[:,2:4] - predictions[:,0:2]
+            predictions = predictions.astype(np.int32)
             valid_bboxes = get_valid_bboxes(bboxes=list(predictions) , edges = edges)
-
-            print(valid_bboxes)
+            
             if len(valid_bboxes)==0:
                 cv2.imshow("streaming...", frame)
                 
@@ -89,8 +84,12 @@ def show_video(video_path , detector_name=None ,save_in_db = False , db_name = N
 
                 cv2.imshow("streaming...", im)
             if save_in_db:
-                entry = Entries(db= "detections.db", video_id= "video123",pred = detection_vector)
-                entry.insert()
+                valid_bboxes = np.array(valid_bboxes)
+                if valid_bboxes.shape[0] !=0:
+                    entry = Entries(db= "detections.db", video_id= "video123",pred = valid_bboxes)
+                    entry.insert(verbose=True)
+                else:
+                    print("Nothing to insert")
             
             
 
