@@ -4,7 +4,29 @@ import cv2
 import numpy as np
 from detector import Detector
 
-def show_video(video_path , detector_name=None ,save_in_db = False , db_name = None , param=False):
+
+def max_image(imgs):
+    imax = np.max(imgs.copy() , axis = 0)
+    return imax.copy()
+
+def draw_text(frame , org, text  ,font_size = 1.1,font = cv2.FONT_HERSHEY_SIMPLEX,font_thickness = 2,font_color=(255,255,255)):
+    img_text = cv2.putText(frame, text, org, font, font_size, font_color, font_thickness, cv2.LINE_AA)
+    return img_text
+def calculate_background(img, lis = [], mem=10):
+    if len(lis) <mem:
+        print("Warming up tracker....")
+        lis.append(img)
+        return None
+    else:
+        import numpy as np
+        imgs = np.array(lis)
+        bg_img = max_image(imgs)
+
+        return bg_img
+        
+
+
+def show_video(video_path , detector_name=None ,save_in_db = False , db_name = None , param=False, replace_detections=False, show_fps=True , len_img_bucket=10 , crop_roi_region = True):
     
         
     flagInitial = True
@@ -16,11 +38,16 @@ def show_video(video_path , detector_name=None ,save_in_db = False , db_name = N
     if detector_name:
         print("Creating Detector...")
         detection_model = Detector(detector_name).model
+
+    if crop_roi_region:
+        crop_rect = []
     if save_in_db:
 
         if not db_name:
             db_name = "detections.db"
         create_database(db_name)  
+    
+
     if param:
         roi = param
     else:
@@ -28,24 +55,53 @@ def show_video(video_path , detector_name=None ,save_in_db = False , db_name = N
         edges = []
     roi_drawn_flag=False
     
+    if replace_detections:
+        image_bucket = []
     while cap:
-        ret , frame = cap.read()
+        ret , original_frame = cap.read()
 
         if not ret:
+            cv2.destroyAllWindows()
             break
-        if len(roi)!=0:
-            if not roi_drawn_flag:
-                frame = draw_polygon(frame,roi)
 
+        display = original_frame.copy()
+        if replace_detections:
+            image_bucket.append(original_frame)
+            if len(image_bucket)==len_img_bucket:
+                bg_img = calculate_background(original_frame,image_bucket ,mem = len_img_bucket)
+                cv2.imshow("bg_img",bg_img)
                 
         if detector_name:
-            detections = detection_model(frame)
+            if crop_roi_region and len(crop_rect)!=0:
+                img_cropped = crop_img(original_frame,crop_rect)
+                cv2.imshow("crop",img_cropped)
+                detections = detection_model(img_cropped)
+            else:
+                detections = detection_model(original_frame)
             
             
+        if show_fps:
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            h,w,_ = display.shape
+            text =  f"fps: {fps:.2f}"
+            frame = draw_text(text = text , frame=display , org = (w-len(text)*10-25,30), font_size=1\
+                               ,font_color=(0,255,255),font_thickness=1, font= cv2.FONT_HERSHEY_COMPLEX_SMALL)
+
+        if replace_detections:
+            image = original_frame.copy()
         
+        
+        if len(roi)!=0:
+
+            if not roi_drawn_flag:
+                display = draw_polygon(display, roi)
+            area_of_intrest =get_rect_enclosing_roi(roi)
+            display = draw_rect(rect=area_of_intrest , img=display , thickness=2, color=(0,0,0))
+            
+
         if not detector_name:
             cv2.imshow(
-                winname = win ,mat=frame
+                winname = win ,mat=display
                 ) 
         
         #cv2.namedWindow("Frame")
@@ -62,27 +118,39 @@ def show_video(video_path , detector_name=None ,save_in_db = False , db_name = N
             print("-------------------------------------------------------------------------------------")
 
             while roi_flag !=True:
-                roi , roi_flag = get_roi_points(frame, roi)
+                h,w,_ = frame.shape
+                roi_text_img = draw_text(display,org=(10,25),text="Select ROI ...",font_size=0.8 ,font_color=(0,0,0), font_thickness=2)
+                roi_text_img = draw_text(display,org=(10,h-40),text="Press any key to confirm ...",font_size=0.5 , font_thickness=1)
+                roi_text_img = draw_text(display,org=(10,h-20),text="Press 's' key to proceed ...",font_size=0.5 , font_thickness=1)
+
+                roi , roi_flag = get_roi_points(roi_text_img, roi)
+
                 if roi_flag:
                     edges = get_edges_from_points(points=roi , verbose=False)
+                    if crop_roi_region:
+                        crop_rect = get_rect_enclosing_roi(roi)
                     flagInitial =False
             
         if detector_name:
             
-            predictions = detections.pred[0].numpy()
             
+            if crop_roi_region and len(crop_rect)!=0:
+                
+                predictions = detections.pred[0].numpy()
+            else:
+                predictions = detections.pred[0].numpy()
             predictions[: ,4] = predictions[:,4] * 100
             predictions[:,2:4] = predictions[:,2:4] - predictions[:,0:2]
             predictions = predictions.astype(np.int32)
             valid_bboxes = get_valid_bboxes(bboxes=list(predictions) , edges = edges)
             
             if len(valid_bboxes)==0:
-                cv2.imshow("streaming...", frame)
+                cv2.imshow("streaming...", display)
                 
             else:
-                im = draw_predicted_bboxes(img=frame.copy(),predictions=valid_bboxes,thickness=2,color=(250,0,0),text="vinay",font_size=12)
+                display = draw_predicted_bboxes(img=display.copy(),predictions=valid_bboxes,thickness=2,color=(250,0,0),text="vinay",font_size=12)
 
-                cv2.imshow("streaming...", im)
+                cv2.imshow("streaming...", display)
             if save_in_db:
                 valid_bboxes = np.array(valid_bboxes)
                 if valid_bboxes.shape[0] !=0:
@@ -95,6 +163,11 @@ def show_video(video_path , detector_name=None ,save_in_db = False , db_name = N
 
         if cv2.waitKey(25) & 0xFF == ord("q"):
             break
+
+def crop_img(img,rect):
+    xp,yp,w,h = rect
+    cropped_img = img[yp:yp+h,xp:xp+w,:]
+    return cropped_img
 
 def select_roi(img, verbose):
     rect = cv2.selectROI(
@@ -110,7 +183,13 @@ def mouse(event, x,y,flags,param):
     if event == cv2.EVENT_LBUTTONDBLCLK:
         pts.append((x,y))
         print((x,y))
-
+def get_rect_enclosing_roi(roi):
+    roi = np.array(roi)
+    minx , miny = np.min(roi , axis=0)
+    maxx , maxy = np.max(roi , axis=0)
+    h = maxy - miny
+    w = maxx - minx
+    return [minx,miny,w,h]
 def add_label_on_bbox(image ,rect , color,text,font,font_size,font_thickness,padding = 4):
     font_scale = cv2.getFontScaleFromHeight(fontFace=font, pixelHeight= font_size,thickness=font_thickness)
     x1,y1,w,h = rect
@@ -134,12 +213,12 @@ def add_label_on_bbox(image ,rect , color,text,font,font_size,font_thickness,pad
         orgy= y1+h+font_size
         org = (orgx ,orgy)
 
-    image = draw_rect(rect1 ,image  ,-1 , color , None) 
+    image = draw_bbox_rect(rect1 ,image  ,-1 , color , None) 
     image = cv2.putText(img = image,text=text , org = org,fontFace=cv2.FONT_HERSHEY_COMPLEX_SMALL,fontScale=font_scale,color=(255,255,255),thickness=1)
 
     return image
 
-def draw_rect(rect,img,thickness , color , text= None , font_size = None):
+def draw_bbox_rect(rect,img,thickness , color , text= None , font_size = None):
     x1,y1,w,h = rect
     
 
@@ -159,8 +238,19 @@ def draw_rect(rect,img,thickness , color , text= None , font_size = None):
 
 
 
-def draw_bbox_in_roi(rect , img):
-    pass
+
+def draw_rect(rect , img , color,thickness):
+    x1,y1,w,h = rect
+    
+
+    img_with_rect = cv2.rectangle(
+        img = img,
+        pt1=(x1,y1),
+        pt2=(x1+w,y1+h),
+        thickness=thickness,
+        color=color
+                  )
+    return img_with_rect
 
 def draw_polygon(frame,points):
     points = np.array(points)
@@ -200,17 +290,24 @@ def draw_predicted_bboxes(img , predictions,thickness = -1 , color = (255,0,0),t
     for i in predictions:
         bbox = i[:4]
         text = f"{i[5]}"
-        img = draw_rect(bbox,img,thickness  , color ,text ,font_size)
+        img = draw_bbox_rect(bbox,img,thickness  , color ,text ,font_size)
     return img
 
 def get_valid_bboxes(bboxes , edges):
     valid_bboxes = []
     for i in bboxes:
-        
-        if is_inside(edges = edges , xp = i[0],yp = i[1])==1:
+        box = i.copy()
+        xp =  box[0] + box[2]/2
+        yp = box[1] + box[3]/2
+        if is_inside(edges = edges , xp = xp, yp = yp)==1:
             valid_bboxes.append(i)
     return valid_bboxes
-def get_roi_points(frame,points):
+def get_adjusted_predictions_accd_crop(predictions,rect):
+    xp,yp,w,h = rect
+    arr = np.array(xp,yp)
+    predictions[:,:2] += arr
+    return predictions
+def get_roi_points(frame, points):
     flag=False
     
     param = [frame , points]
