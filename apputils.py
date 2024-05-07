@@ -137,6 +137,8 @@ def show_video(video_path , detector_name=None ,save_in_db = False , db_name = N
             if crop_roi_region and len(crop_rect)!=0:
                 
                 predictions = detections.pred[0].numpy()
+                predictions = get_adjusted_predictions_accd_crop(predictions,crop_rect)
+                print(predictions)
             else:
                 predictions = detections.pred[0].numpy()
             predictions[: ,4] = predictions[:,4] * 100
@@ -303,8 +305,9 @@ def get_valid_bboxes(bboxes , edges):
             valid_bboxes.append(i)
     return valid_bboxes
 def get_adjusted_predictions_accd_crop(predictions,rect):
+    print(predictions)
     xp,yp,w,h = rect
-    arr = np.array(xp,yp)
+    arr = np.array([yp,xp])
     predictions[:,:2] += arr
     return predictions
 def get_roi_points(frame, points):
