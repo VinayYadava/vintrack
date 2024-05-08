@@ -26,7 +26,7 @@ def calculate_background(img, lis = [], mem=10):
         
 
 
-def show_video(video_path , detector_name=None ,save_in_db = False , db_name = None , param=False, replace_detections=False, show_fps=True , len_img_bucket=10 , crop_roi_region = True):
+def show_video(video_path , detector_name=None ,save_in_db = False , db_name = None , param = False, replace_detections=False, show_fps=True , len_img_bucket=10 , crop_roi_region = True):
     
         
     flagInitial = True
@@ -71,15 +71,7 @@ def show_video(video_path , detector_name=None ,save_in_db = False , db_name = N
                 bg_img = calculate_background(original_frame,image_bucket ,mem = len_img_bucket)
                 cv2.imshow("bg_img",bg_img)
                 
-        if detector_name:
-            if crop_roi_region and len(crop_rect)!=0:
-                img_cropped = crop_img(original_frame,crop_rect)
-                cv2.imshow("crop",img_cropped)
-                detections = detection_model(img_cropped)
-            else:
-                detections = detection_model(original_frame)
-            
-            
+       
         if show_fps:
             fps = cap.get(cv2.CAP_PROP_FPS)
             h,w,_ = display.shape
@@ -95,8 +87,6 @@ def show_video(video_path , detector_name=None ,save_in_db = False , db_name = N
 
             if not roi_drawn_flag:
                 display = draw_polygon(display, roi)
-            area_of_intrest =get_rect_enclosing_roi(roi)
-            display = draw_rect(rect=area_of_intrest , img=display , thickness=2, color=(0,0,0))
             
 
         if not detector_name:
@@ -129,17 +119,17 @@ def show_video(video_path , detector_name=None ,save_in_db = False , db_name = N
                     edges = get_edges_from_points(points=roi , verbose=False)
                     if crop_roi_region:
                         crop_rect = get_rect_enclosing_roi(roi)
+                        edges = np.array(edges) - crop_rect[:2]
                     flagInitial =False
-            
         if detector_name:
             
-            
             if crop_roi_region and len(crop_rect)!=0:
-                
+                img_cropped = crop_img(original_frame,crop_rect)
+                detections = detection_model(img_cropped)
                 predictions = detections.pred[0].numpy()
-                predictions = get_adjusted_predictions_accd_crop(predictions,crop_rect)
-                print(predictions)
+                
             else:
+                detections = detection_model(original_frame)
                 predictions = detections.pred[0].numpy()
             predictions[: ,4] = predictions[:,4] * 100
             predictions[:,2:4] = predictions[:,2:4] - predictions[:,0:2]
@@ -150,8 +140,12 @@ def show_video(video_path , detector_name=None ,save_in_db = False , db_name = N
                 cv2.imshow("streaming...", display)
                 
             else:
-                display = draw_predicted_bboxes(img=display.copy(),predictions=valid_bboxes,thickness=2,color=(250,0,0),text="vinay",font_size=12)
-
+                if crop_roi_region and len(crop_rect)!=0:
+                    x,y,w,h = crop_rect
+                    display[y:y+h,x:x+w,:] = draw_predicted_bboxes(img=display[y:y+h,x:x+w,:] ,predictions=valid_bboxes,thickness=2,color=(250,0,0),text="vinay",font_size=12)
+                    
+                else:
+                    display = draw_predicted_bboxes(img=display.copy(),predictions=valid_bboxes,thickness=2,color=(250,0,0),text="vinay",font_size=12)
                 cv2.imshow("streaming...", display)
             if save_in_db:
                 valid_bboxes = np.array(valid_bboxes)
@@ -304,12 +298,7 @@ def get_valid_bboxes(bboxes , edges):
         if is_inside(edges = edges , xp = xp, yp = yp)==1:
             valid_bboxes.append(i)
     return valid_bboxes
-def get_adjusted_predictions_accd_crop(predictions,rect):
-    print(predictions)
-    xp,yp,w,h = rect
-    arr = np.array([yp,xp])
-    predictions[:,:2] += arr
-    return predictions
+
 def get_roi_points(frame, points):
     flag=False
     
