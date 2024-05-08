@@ -6,3 +6,4 @@ images/
 *openvino
 __pycache__/
 /venv
+*jpg
