@@ -150,7 +150,7 @@ def show_video(video_path , detector_name=None ,save_in_db = False , db_name = N
             if save_in_db:
                 valid_bboxes = np.array(valid_bboxes)
                 if valid_bboxes.shape[0] !=0:
-                    entry = Entries(db= "detections.db", video_id= "video123",pred = valid_bboxes)
+                    entry = Entries(db= "detections.db", video_id= "video123",predictions = valid_bboxes)
                     entry.insert(verbose=True)
                 else:
                     print("Nothing to insert")

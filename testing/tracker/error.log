@@ -1,0 +1,5 @@
+2024-05-13 17:48:03,728 - ERROR - An error occurred: 'int' object is not iterable
+Traceback (most recent call last):
+  File "C:\Users\spars\Desktop\VinayLLC\vintrack\testing\tracker\detection_db.py", line 35, in save_image_in_folder
+    for img in zip(imgs, tracking_ids):
+TypeError: 'int' object is not iterable
