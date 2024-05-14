@@ -3,10 +3,9 @@ from datetime import datetime
 import os
 import logging
 
-from cv2 import imread, imwrite
 import numpy as np
 
-from detector import Detector
+from cv2 import imwrite
 
 def create_database(db_file):
     conn = sqlite3.connect(db_file)
@@ -30,11 +29,14 @@ def create_database(db_file):
     conn.close()
     print("Table 'detections' created successfully.")
 
-def save_image_in_folder(imgs, timestamp, folder, tracking_ids):
+def save_images_in_folder(imgs, timestamp, folder, tracking_ids):
     try:
-        for img in zip(imgs, tracking_ids):
-            file = f"{timestamp}-{tracking_ids}.jpg"
+        for img ,id in zip(imgs, tracking_ids):
+            file = f"{timestamp}-{id}.jpg"
+            if not os.path.exists(folder):
+                os.mkdir(folder)
             filepath = os.path.join(folder , file)
+            print(filepath)
             imwrite(filename=filepath, img=img)
         return True
     except Exception as e:
@@ -84,26 +86,3 @@ class Entries:
         conn.close()
         if verbose:
             print(f"{l} entries inserted successfully.")
-
-
-if __name__ == "__main__":
-
-    # Example usage:
-    # Create the database file and table
-    det = Detector(name = "yolov5n")
-    create_database("detections.db")
-    IMAGE_PATH = "download.jpg"
-
-    img = imread(IMAGE_PATH)
-    print(img)
-
-    mod = det.model
-    if mod is None:
-        print("mod is none !")
-    prediction = mod(img).pred[0].numpy()
-
-    print(prediction)
-
-    # Create an Entry object and insert it into the database
-    entry = Entries(db= "detections.db", video_id= "video123",predictions = prediction)
-    entry.insert()

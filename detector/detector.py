@@ -1,4 +1,4 @@
-from model import Yolov5n, Yolov5s
+from .model import Yolov5n, Yolov5s
 class Detector:
     def __init__(self,name ,param=None):
         self.param = param
@@ -17,11 +17,4 @@ class Detector:
         if name == "yolov5s":
             model = Yolov5s.create_model()
             return model
-
-        
-if __name__ == "__main__":
-    det = Detector(name = "yolov5s")
-    model = det.model
-    result = model("download.jpg")
-    result.show()
-
+   

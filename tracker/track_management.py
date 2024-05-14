@@ -1,5 +1,4 @@
 import numpy as np
-
 from detection_db import create_database , Entries
 
 def initialization_tracks(measurements , start , verbose = False):
@@ -41,10 +40,3 @@ def save_tracks(dbname , tracks, video_id):
     except Exception as e:
         print(e)
         return False
-
-if __name__ == "__main__":
-    detections = np.array([[1,2,3,4],[2,3,4,5],[2,3,4,5]])
-    trackings = initialization_tracks(measurements=detections , start=4 , verbose=True)
-    stream_dict={}
-    stream_dict["length"] = 2
-    print(*deletion_condition(trackings , stream_dict))

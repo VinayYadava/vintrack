@@ -66,18 +66,18 @@ class KalmanFilter(object):
         self.P = (I - (K * self.H)) * self.P   #Eq.(13)
         return self.x[0:2]
     
-
-# Define parameters
-dt = 0.1  # sampling time
-u_x = 0.1  # acceleration in x-direction
-u_y = 0.1  # acceleration in y-direction
-std_acc = 0.1  # process noise magnitude
-x_std_meas = 0.1  # standard deviation of the measurement in x-direction
-y_std_meas = 0.1  # standard deviation of the measurement in y-direction
-
-# Create Kalman filter instance
-kf = KalmanFilter(dt, u_x, u_y, std_acc, x_std_meas, y_std_meas)
-
-# Predict next state
-predicted_state = kf.predict()
-print(predicted_state)
+if __name__ == "__main__":
+    # Define parameters
+    dt = 0.1  # sampling time
+    u_x = 0.1  # acceleration in x-direction
+    u_y = 0.1  # acceleration in y-direction
+    std_acc = 0.1  # process noise magnitude
+    x_std_meas = 0.1  # standard deviation of the measurement in x-direction
+    y_std_meas = 0.1  # standard deviation of the measurement in y-direction
+    
+    # Create Kalman filter instance
+    kf = KalmanFilter(dt, u_x, u_y, std_acc, x_std_meas, y_std_meas)
+    
+    # Predict next state
+    predicted_state = kf.predict()
+    print(predicted_state)

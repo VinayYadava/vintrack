@@ -7,3 +7,5 @@ images/
 __pycache__/
 /venv
 *jpg
+*.egg-info
+*.tar.gz
