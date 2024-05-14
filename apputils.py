@@ -12,6 +12,7 @@ def max_image(imgs):
 def draw_text(frame , org, text  ,font_size = 1.1,font = cv2.FONT_HERSHEY_SIMPLEX,font_thickness = 2,font_color=(255,255,255)):
     img_text = cv2.putText(frame, text, org, font, font_size, font_color, font_thickness, cv2.LINE_AA)
     return img_text
+
 def calculate_background(img, lis = [], mem=10):
     if len(lis) <mem:
         print("Warming up tracker....")

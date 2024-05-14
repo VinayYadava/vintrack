@@ -3,9 +3,5 @@ opencv-python
 pandas
 requests
 pillow
-
-
-
-
-
-
+torch
+matplotlib

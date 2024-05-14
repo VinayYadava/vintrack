@@ -8,6 +8,6 @@ setup(
     packages = find_packages(),
     include_package_data=True,
 )
-lib_path = os.path.join(sys.prefix, "Lib" , "site_packages")
-print(lib_path)
-shutil.copy("../tracker" , lib_path , follow_symlinks=True)
+#lib_path = os.path.join(sys.prefix, "Lib" , "site_packages")
+#print(lib_path)
+#shutil.copy("../tracker" , lib_path , follow_symlinks=True)
